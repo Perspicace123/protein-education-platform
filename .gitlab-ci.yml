@@ -1,0 +1,9 @@
+pages:
+  stage: deploy
+  script:
+    - echo "Deploying to GitLab Pages from 'docs' folder..."
+  artifacts:
+    paths:
+      - public
+  only:
+    - main

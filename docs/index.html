@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>3D蛋白质交互式学习平台</title>
+  <link rel="stylesheet" href="styles/styles.css" />
+  <!-- 本地托管 3Dmol.js（优先），若未放 libs 可把下面的 CDN 换成本地 -->
+  <script src="libs/3Dmol-min.js"></script>
+  <!-- 样式定义 -->
+  <style>
+    /* 分子选择按钮 */
+    .mol-btn {
+        padding: 12px 15px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    .mol-btn:hover {
+        border-color: #3498db;
+        background: #e3f2fd;
+        transform: translateY(-2px);
+    }
+    .mol-btn.active {
+        border-color: #2ecc71;
+        background: #e8f6f3;
+        color: #27ae60;
+        font-weight: bold;
+    }
+
+    /* 样式按钮 */
+    .style-btn {
+        padding: 10px 12px;
+        background: #34495e;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.3s;
+        font-size: 0.9em;
+    }
+    .style-btn:hover {
+        background: #2c3e50;
+    }
+    .style-btn.active {
+        background: #e74c3c;
+    }
+
+    /* 脉冲动画 */
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        #moleculeViewerSection {
+            padding: 0 10px;
+        }
+        #viewer3D {
+            height: 400px !important;
+        }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-title">3D蛋白质交互式学习平台</div>
+    <nav class="top-nav">
+      <span id="nav-home" class="nav-item active">首页</span>
+    </nav>
+  </header>
+<!-- ============================ -->
+<!-- 3D分子可视化区域 - 直接集成 -->
+<!-- ============================ -->
+  <main>
+<section id="moleculeViewerSection" style="margin: 50px auto; max-width: 1200px; padding: 0 20px;">
+    <h2 style="text-align: center; color: #2c3e50; margin-bottom: 30px; font-size: 2em;">
+        🔬 3D蛋白质交互式学习平台
+    </h2>
+    <p style="text-align: center; color: #7f8c8d; margin-bottom: 40px; font-size: 1.1em;">
+        直接在此探索蛋白的三维结构。旋转、缩放、切换样式以观察相互作用细节。
+        建议使用电脑访问，如果只看见黑色幕布，是因为3D模型加载稍慢，请稍等。
+    </p>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 8px 25px rgba(0,0,0,0.08);">
+
+        <!-- 左侧：3D可视化画布 -->
+        <div style="flex: 3; min-width: 300px;">
+            <div style="border: 2px solid #e0e0e0; border-radius: 10px; overflow: hidden; background: #1a1a1a; position: relative;">
+                <div id="viewer3D" style="width: 100%; height: 500px;"></div>
+                <div style="position: absolute; bottom: 15px; right: 15px; background: rgba(0,0,0,0.7); color: white; padding: 8px 15px; border-radius: 20px; font-size: 0.9em;">
+                    <span id="currentMoleculeLabel">准备中...</span>
+                </div>
+            </div>
+
+            <!-- 操作指南 -->
+            <div style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
+                <div style="background: #f0f7ff; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <div style="font-weight: bold; color: #3498db;">旋转</div>
+                    <div style="font-size: 0.9em;">鼠标左键拖动</div>
+                </div>
+                <div style="background: #f0f7ff; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <div style="font-weight: bold; color: #3498db;">缩放</div>
+                    <div style="font-size: 0.9em;">鼠标滚轮</div>
+                </div>
+                <div style="background: #f0f7ff; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <div style="font-weight: bold; color: #3498db;">复位</div>
+                    <div style="font-size: 0.9em;">双击画布</div>
+                </div>
+                <div style="background: #f0f7ff; padding: 12px 20px; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <div style="font-weight: bold; color: #3498db; ">移动</div>
+                    <div style="font-size: 0.9em;">鼠标中键拖动</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：控制面板 -->
+        <div style="flex: 1; min-width: 250px;">
+
+            <!-- 分子选择 -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px; font-size: 1.2em;">
+                    选择分子
+                </h3>
+                <div id="moleculeSelector" style="display: grid; gap: 10px;">
+                </div>
+            </div>
+
+            <!-- 可视化样式 -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px; font-size: 1.2em;">
+                    显示样式
+                </h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <button class="style-btn" data-style="cartoon" style="flex: 1;">卡通</button>
+                    <button class="style-btn" data-style="stick" style="flex: 1;">球棍</button>
+                    <button class="style-btn" data-style="sphere" style="flex: 1;">球体</button>
+                    <button class="style-btn" data-style="line" style="flex: 1;">线条</button>
+                </div>
+            </div>
+
+            <!-- 分子信息 -->
+            <div id="moleculeInfoBox" style="background: white; padding: 20px; border-radius: 10px; border-left: 4px solid #9b59b6; box-shadow: 0 3px 10px rgba(0,0,0,0.05);">
+                <h3 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px; font-size: 1.2em;">
+                    结构信息
+                </h3>
+                <div id="moleculeDetails" style="font-size: 0.95em; line-height: 1.5;">
+                    <p style="color: #7f8c8d;">选择左侧的分子开始探索...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 加载状态提示 -->
+    <div id="loadingIndicator" style="text-align: center; margin-top: 20px; display: none;">
+        <div style="color: #3498db; font-weight: bold;">
+            <span style="display: inline-block; animation: pulse 1.5s infinite;">⏳</span>
+            正在加载分子结构...
+        </div>
+    </div>
+</section>
+
+<!-- 引入3Dmol.js库 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/1.8.0/3Dmol-min.js"></script>
+
+<!-- 3D可视化核心脚本 -->
+<script>
+    // 初始化3D查看器
+    let viewer = null;
+    let currentMolecule = null;
+
+    // 分子数据库
+    const moleculeDB = {
+        "1CQE": {
+            name: "HMG-CoA还原酶",
+            displayName: "HMG-CoA还原酶",
+            description: "HMG-CoA还原酶，HMG-CoA 还原酶 (HMGCR) 是胆固醇合成的限速酶，在将 HMG-CoA 转化为甲羟戊酸的过程中起着决定作用。",
+            type: "蛋白质",
+            pdbPath: "data/pdb/8QEB.pdb"
+        },
+        "1HWK": {
+            name: "Mpro蛋白（COVID-19的主要蛋白酶）",
+            displayName: "Mpro蛋白",
+            description: "Mpro蛋白，是COVID-19的主要蛋白酶，负责将病毒基因组复制产生的多聚蛋白切割为成熟蛋白，这些蛋白对病毒RNA合成、组装和释放至关重要。抑制Mpro可阻断病毒复制，是抗病毒药物设计的核心策略之一。",
+            type: "蛋白质",
+            pdbPath: "data/pdb/7BQY.pdb"
+        }
+
+        // 可继续添加更多分子
+    };
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化3Dmol查看器
+        viewer = $3Dmol.createViewer("viewer3D", {
+            backgroundColor: "0x1a1a1a",
+            defaultcolors: $3Dmol.rasmolElementColors
+        });
+
+        // 初始化分子选择器
+        initMoleculeSelector();
+
+        // 初始化样式控制
+        initStyleControls();
+
+        // 默认加载第一个分子
+        const firstPDB = Object.keys(moleculeDB)[0];
+        if (firstPDB) {
+            loadMolecule(firstPDB);
+            setActiveButton(firstPDB);
+            setActiveStyle('cartoon');
+        }
+
+        // 双击画布复位视角
+        document.getElementById('viewer3D').addEventListener('dblclick', function() {
+            if (viewer) {
+                viewer.zoomTo();
+                viewer.render();
+            }
+        });
+    });
+
+    // 初始化分子选择器
+    function initMoleculeSelector() {
+        const container = document.getElementById('moleculeSelector');
+
+        // 为每个分子创建按钮
+        for (const pdbId in moleculeDB) {
+            const mol = moleculeDB[pdbId];
+            const btn = document.createElement('button');
+            btn.className = 'mol-btn';
+            btn.setAttribute('data-pdb', pdbId);
+            btn.textContent = mol.displayName;
+
+            btn.addEventListener('click', function() {
+                const pdbId = this.getAttribute('data-pdb');
+                loadMolecule(pdbId);
+                setActiveButton(pdbId);
+            });
+
+            container.appendChild(btn);
+        }
+    }
+
+    // 设置活动分子按钮
+    function setActiveButton(pdbId) {
+        document.querySelectorAll('.mol-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-pdb') === pdbId) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    // 初始化样式控制
+    function initStyleControls() {
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const style = this.getAttribute('data-style');
+                applyStyle(style);
+                setActiveStyle(style);
+            });
+        });
+    }
+
+    // 设置活动样式按钮
+    function setActiveStyle(style) {
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-style') === style) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    // 加载分子
+    function loadMolecule(pdbId) {
+        const mol = moleculeDB[pdbId];
+        if (!mol) return;
+
+        // 显示加载指示器
+        showLoading(true);
+
+        // 更新当前分子标签
+        document.getElementById('currentMoleculeLabel').textContent = mol.displayName;
+
+        // 清空当前视图
+        viewer.clear();
+        viewer.render();
+
+        // 加载PDB文件
+        jQuery.ajax({
+            url: mol.pdbPath,
+            dataType: 'text',
+            success: function(data) {
+                viewer.addModel(data, "pdb");
+
+                // 应用默认卡通样式
+                viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
+
+                // 配体用球棍显示
+                if (mol.ligands && mol.ligands.length > 0) {
+                    viewer.setStyle({resn: mol.ligands}, {stick: {colorscheme: 'greenCarbon'}});
+                }
+
+                // 渲染
+                viewer.zoomTo();
+                viewer.render();
+
+                // 更新当前分子
+                currentMolecule = pdbId;
+
+                // 更新信息面板
+                updateMoleculeInfo(mol);
+
+                // 隐藏加载指示器
+                showLoading(false);
+            },
+            error: function() {
+                // 如果本地文件加载失败，尝试在线加载
+                loadFromOnlinePDB(pdbId, mol);
+            }
+        });
+    }
+
+    // 从在线PDB加载（备用方案）
+    function loadFromOnlinePDB(pdbId, mol) {
+        const onlineUrl = `https://files.rcsb.org/download/${pdbId}.pdb`;
+
+        jQuery.ajax({
+            url: onlineUrl,
+            dataType: 'text',
+            success: function(data) {
+                viewer.clear();
+                viewer.addModel(data, "pdb");
+                viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
+
+                if (mol.ligands && mol.ligands.length > 0) {
+                    viewer.setStyle({resn: mol.ligands}, {stick: {colorscheme: 'greenCarbon'}});
+                }
+
+                viewer.zoomTo();
+                viewer.render();
+                currentMolecule = pdbId;
+
+                // 更新信息，注明是在线加载
+                const onlineInfo = {...mol};
+                onlineInfo.description += " (从在线PDB数据库加载)";
+                updateMoleculeInfo(onlineInfo);
+
+                showLoading(false);
+            },
+            error: function() {
+                alert(`无法加载分子结构: ${pdbId}\n请检查网络连接或文件路径。`);
+                showLoading(false);
+            }
+        });
+    }
+
+    // 应用可视化样式
+    function applyStyle(style) {
+        if (!currentMolecule || !viewer) return;
+
+        viewer.setStyle({}, {}); // 清除当前样式
+
+        const mol = moleculeDB[currentMolecule];
+
+        switch(style) {
+            case 'cartoon':
+                viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
+                if (mol.ligands) viewer.setStyle({resn: mol.ligands}, {stick: {}});
+                break;
+            case 'stick':
+                viewer.setStyle({}, {stick: {colorscheme: 'element'}});
+                break;
+            case 'sphere':
+                viewer.setStyle({}, {sphere: {colorscheme: 'element', scale: 0.3}});
+                break;
+            case 'line':
+                viewer.setStyle({}, {line: {colorscheme: 'element'}});
+                break;
+        }
+
+        viewer.render();
+    }
+
+    // 更新分子信息面板
+    function updateMoleculeInfo(mol) {
+        const detailsDiv = document.getElementById('moleculeDetails');
+        detailsDiv.innerHTML = `
+            <p style="margin-bottom: 10px;">
+                <strong style="color: #2c3e50;">${mol.name}</strong>
+            </p>
+            <p style="margin-bottom: 8px; color: #555;">
+                ${mol.description}
+            </p>
+            <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>类型:</span>
+                    <span style="font-weight: bold;">${mol.type}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>分辨率:</span>
+                    <span style="font-weight: bold;">${mol.resolution || 'N/A'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>配体:</span>
+                    <span style="font-weight: bold;">${mol.ligands ? mol.ligands.join(', ') : '无'}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // 显示/隐藏加载指示器
+    function showLoading(show) {
+        const indicator = document.getElementById('loadingIndicator');
+        if (show) {
+            indicator.style.display = 'block';
+        } else {
+            indicator.style.display = 'none';
+        }
+    }
+</script>
+  </main>
+
+  <footer class="site-footer" id="about">
+    <div>数据来源：RCSB PDB。示例仅用于教育目的。</div>
+    <div>建议使用 Chrome/Edge 浏览器。</div>
+  </footer>
+
+  <script src="js/app.js"></script>
+
+  <!-- 鸣谢以下数据库和软件 -->
+<footer style="margin-top: 60px; padding: 25px; background: linear-gradient(to right, #f8f9fa, #e9ecef); border-top: 2px solid #3498db; font-size: 0.9em; color: #495057;">
+
+    <div style="margin-bottom: 20px;">
+        <h4 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #e74c3c; padding-bottom: 8px; display: inline-block;">
+            数据来源
+        </h4>
+        <ul style="list-style: none; padding-left: 0; margin: 15px 0;">
+            <li style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                <strong style="color: #2980b9;">RCSB PDB</strong>:
+                Berman, H.M. et al. (2000) <em>Nucleic Acids Research</em>, 28:235-242.
+                <a href="https://doi.org/10.1093/nar/28.1.235" style="color: #e74c3c; text-decoration: none; font-family: monospace; background: #fdf2f2; padding: 2px 6px; border-radius: 3px; margin-left: 5px;">doi:10.1093/nar/28.1.235</a>
+            </li>
+            <li style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                <strong style="color: #2980b9;">UniProt</strong>:
+                The UniProt Consortium (2023) <em>Nucleic Acids Research</em>, 51(D1):D523-D531.
+                <a href="https://doi.org/10.1093/nar/gkac1052" style="color: #e74c3c; text-decoration: none; font-family: monospace; background: #fdf2f2; padding: 2px 6px; border-radius: 3px; margin-left: 5px;">doi:10.1093/nar/gkac1052</a>
+            </li>
+        </ul>
+
+        <h4 style="color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 8px; display: inline-block;">
+            软件致谢
+        </h4>
+        <ul style="list-style: none; padding-left: 0; margin: 15px 0;">
+            <li style="margin-bottom: 12px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                <strong style="color: #16a085;">PyMOL</strong>:
+                The PyMOL Molecular Graphics System (Open-Source Version), Version 3.2.0a, Schrödinger, LLC.
+                <a href="https://pymol.org" style="color: #e74c3c; text-decoration: none; font-family: monospace; background: #fdf2f2; padding: 2px 6px; border-radius: 3px; margin-left: 5px;">Website</a>
+            </li>
+        </ul>
+    </div>
+    <!-- 在footer前添加专门的免责声明区块 -->
+<div style="background: #f8f9fa; padding: 25px; margin: 40px 0 20px 0; border-radius: 8px; border-left: 4px solid #e74c3c;">
+    <h4 style="color: #c0392b; margin-top: 0; margin-bottom: 15px;">
+        重要声明与免责条款
+    </h4>
+    <div style="font-size: 0.85em; line-height: 1.6; color: #555;">
+        <ol style="padding-left: 20px; margin-bottom: 15px;">
+            <li style="margin-bottom: 8px;">
+                <strong>教育目的</strong>：本平台所有内容仅供<b>教学、科研和学习参考</b>，不作为医疗、诊断或商业决策依据。
+            </li>
+            <li style="margin-bottom: 8px;">
+                <strong>数据准确性</strong>：分子结构数据来源于公开数据库（如RCSB PDB），平台不保证数据的绝对准确性和时效性。
+            </li>
+            <li style="margin-bottom: 8px;">
+                <strong>非医疗建议</strong>：本平台展示的蛋白质结构与疾病相关信息<b>不能替代专业医疗建议</b>。如有健康问题，请咨询医疗专业人士。
+            </li>
+            <li style="margin-bottom: 8px;">
+                <strong>知识产权</strong>：所有3D分子结构的知识产权归原始研究者所有，本平台仅提供可视化工具。
+            </li>
+            <li style="margin-bottom: 8px;">
+                <strong>使用风险</strong>：用户使用本平台产生的任何直接或间接损失，平台创建者及所属机构<b>不承担法律责任</b>。
+            </li>
+            <li style="margin-bottom: 8px;">
+                <strong>技术限制</strong>：本平台基于开源工具构建，可能存在技术缺陷或显示误差。
+            </li>
+        </ol>
+        <p style="font-style: italic; color: #7f8c8d; margin: 15px 0 0 0; padding-top: 15px; border-top: 1px solid #ddd;">
+            使用本平台即表示您已阅读、理解并同意以上所有条款。
+        </p>
+    </div>
+</div>
+
+    <!-- 版权和个人信息区块 -->
+    <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #bdc3c7;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <p style="margin: 0; line-height: 1.6;">
+                    <strong>创建者</strong>: Haocong Liao, Jinan University<br>
+                    <strong>邮箱</strong>: <span id="contactEmail"></span><br>
+                </p>
+                <p style="margin: 10px 0 0 0; color: #7f8c8d; font-size: 0.85em;">
+                    本平台基于Netlify构建，最后维护：2025年12月
+                </p>
+                <p style="margin: 10px 0 0 0; color: #7f8c8d; font-size: 0.85em;">
+                    禁止用于商业用途，仅作教育、学习
+                </p>
+            </div>
+            <div style="text-align: right;">
+                <div style="margin-bottom: 10px;">
+                    <a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" style="display: inline-block;">
+                        <img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" />
+                    </a>
+                    <p style="margin: 10px 0 0 0; color: #7f8c8d; font-size: 0.85em;">
+                    本平台遵循 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" style="color: #3498db; font-weight: bold;">知识共享 CC BY-NC-SA 4.0</a> 许可协议。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<script>
+const parts = ['liaohaocong', 'stu2025','jnu', 'edu', 'cn'];
+const email = parts[0] + '@' + parts[1] + '.' + parts[2] + '.' + parts[3] + '.' + parts[4];
+document.getElementById('contactEmail').innerHTML =
+    '<a href="mailto:' + email + '">' + email + '</a>';
+</script>
+</body>
+</html>
