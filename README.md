@@ -32,7 +32,13 @@ Understand the three-dimensional spatial structure of proteins
 
 How to use
 "Basic Operations"
-Operation effect
+
+-For Local
+"Download the .zip,drag it into your vs code or pycharm,find the docs/index.html,load it in your brower,then,you can easily use it"
+
+-For online
+https://protein-education-platform.netlify.app
+
 |------|------|
 ** Left-click drag ** Rotate the structure
 ** Mouse Wheel ** Zoom view
