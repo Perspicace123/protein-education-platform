@@ -1,7 +1,7 @@
 pages:
   stage: deploy
   script:
-    - echo "Deploying to GitLab Pages from 'docs' folder..."
+    - echo "Deploying to GitHub Pages from 'docs' folder..."
   artifacts:
     paths:
       - public
