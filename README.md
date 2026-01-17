@@ -36,7 +36,7 @@ How to use
 -For Local
 "Download the .zip,drag it into your vs code or pycharm,find the docs/index.html,load it in your brower,then,you can easily use it"
 
--For online
+-For online(Recommend)
 https://protein-education-platform.netlify.app
 
 |------|------|
