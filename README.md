@@ -34,7 +34,7 @@ How to use
 "Basic Operations"
 
 -For Local
-"Download the .zip,drag it into your vs code or pycharm,find the docs/index.html,load it in your brower,then,you can easily use it"
+"Download the .zip,decompress and drag it into your IDE,find the docs/index.html,load it in your brower,then,you can easily use it"
 
 -For online
 https://protein-education-platform.netlify.app
